@@ -5,9 +5,6 @@ under MIT. Native scan engine, manual HTTP tests, two sessions, an intercepting
 proxy, table-driven tests, reports and optional Chrome/Edge tests. There is no
 external scan back end. Existing project findings remain readable.
 
-Guides: [Native engine](EIGENE-ENGINE.md), [Browser](BROWSER.md),
-[Intruder](INTRUDER.md), [Proxy](PROXY.md), [Data table](DATATABLE.md),
-[Test report](PRUEFBERICHT.md).
 
 ## Start
 
