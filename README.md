@@ -1,4 +1,4 @@
-# PowerWEB 3.2
+# PowerWEB 
 
 A self-contained web testing workbench for Windows and PowerShell, original code
 under MIT. Native scan engine, manual HTTP tests, two sessions, an intercepting
