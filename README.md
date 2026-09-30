@@ -1,16 +1,23 @@
-# PowerWEB 
+# PowerWEB 4.0
+
+Part of the NoAuthZone tools — https://github.com/NoAuthZone
 
 A self-contained web testing workbench for Windows and PowerShell, original code
 under MIT. Native scan engine, manual HTTP tests, two sessions, an intercepting
-proxy, table-driven tests, reports and optional Chrome/Edge tests. There is no
+proxy, table-driven tests and reports. There is no
 external scan back end. Existing project findings remain readable.
 
+Guides: [Native engine](EIGENE-ENGINE.md),
+[Intruder](INTRUDER.md), [Proxy](PROXY.md), [Data table](DATATABLE.md),
+[Repeater](REPEATER.md), [Sitemap, HAR and cURL](SITEMAP.md),
+[TLS / SSL scan](TLS.md), [Test report](PRUEFBERICHT.md).
 
 ## Start
 
 1. Extract the whole ZIP into its own folder.
 2. Double-click `Start-PowerWEB.cmd`.
-3. On **Engagement and Scan** enter a project name and target scope.
+3. On **Engagement and Scan** enter a project name and, optionally, a target scope
+   (needed only for the crawl, native engine and role comparison).
 4. Review exclusions and limits, then **Start scan**.
 
 Requirements: Windows, Windows PowerShell 5.1 and WPF/.NET Framework. No admin
@@ -23,12 +30,19 @@ still applies. `PowerWEB.ps1` also launches the interface.
 ### 1. Engagement and Scan
 
 - Project name, target scope, additional start URLs and engagement notes.
-- The scope binds scheme, host, port and optionally a path with its subpaths.
-  `https://example.org/app/` allows `/app/page`, but neither `/application` nor
-  subdomains, other ports, HTTP or foreign hosts. Query parameters are not an
-  additional scope boundary. A full page path limits the crawler to exactly that
-  path and its subpaths; for wider crawling use a shared directory path as scope
-  and concrete pages as start URLs.
+- **The target scope is optional.** Leave it empty to work without a scope:
+  Requests, Parameters, Intruder, Data table, Repeater and the proxy then accept
+  and forward any target you supply. A crawl (tab 1 scan), the native engine and
+  the role comparison still need a scope, because they start from and stay within
+  the scope origin.
+- When set, the scope binds scheme, host, port and optionally a path with its
+  subpaths. `https://example.org/app/` allows `/app/page`, but neither
+  `/application` nor subdomains, other ports, HTTP or foreign hosts. Query
+  parameters are not an additional scope boundary. A full page path limits the
+  crawler to exactly that path and its subpaths; for wider crawling use a shared
+  directory path as scope and concrete pages as start URLs.
+- Exclusions still apply even without a scope, so you can carve out `logout` or
+  `delete` regardless. Only test targets you are authorized to test.
 - Exclusions are substrings, case-insensitive, applied to decoded paths and
   queries. Default: logout, signout, delete, remove, unsubscribe. Encoded path
   separators and dot segments are rejected conservatively.
@@ -53,7 +67,7 @@ still applies. `PowerWEB.ps1` also launches the interface.
 
 Auth headers such as `Authorization: Bearer ...` or `Cookie: ...` are held in
 memory only and used inside the scope only. They are not saved. Native requests
-use the cookie store of the session A/B chosen on tab 8. There is no automatic
+use the cookie store of the session A/B chosen on tab 7. There is no automatic
 login, token renewal or MFA handling. Expired sessions can therefore lead to
 login pages or 401/403 responses.
 
@@ -81,7 +95,7 @@ Response headers and body are visible. Known secret response headers are hidden;
 response bodies themselves may still contain secrets. A response can be remembered
 for comparison with the next one: status, bytes read, content equality and changed
 header names are compared. This is not a semantic HTML diff. For role tests use the
-A/B comparison on tab 8 or switch the auth headers deliberately and repeat the same
+A/B comparison on tab 7 or switch the auth headers deliberately and repeat the same
 request.
 
 ### 4. Parameters
@@ -107,36 +121,82 @@ business logic and wrap-up/retest. Status and evidence are saved in the project
 and report. **Open** means not tested, **Reviewed** does not automatically mean
 safe. The checklist is a starting point, not a complete test standard.
 
-### 7. Browser
-
-Edge or Chrome in a fresh, headless profile: DOM link discovery, a form inventory,
-cookie attributes, JavaScript errors and an optional active XSS check. See
-[BROWSER.md](BROWSER.md).
-
-### 8. Native engine
+### 7. Native engine
 
 An active but bounded HTTP scanner in pure PowerShell/.NET with structured
 evidence: SQL error, boolean SQL response, template evaluation, HTML reflection,
 redirects, header injection and CORS. Plus two separate sessions (A/B) and a role
 comparison. See [EIGENE-ENGINE.md](EIGENE-ENGINE.md).
 
-### 9. Intruder
+## Proxy → Repeater → Intruder
 
-Repeated, deliberately modified requests with your own payloads. Mark positions in
+1. Set the scope on tab 1. For HTTPS, turn on **Decrypt HTTPS (MITM)** and click **Trust CA once (Windows user)**; review the SHA-256 fingerprint in the one-time confirmation. Start the proxy and click **Open browser through proxy**.
+2. Select a request in proxy history and send it to **Repeater** or **Intruder**.
+3. In Intruder, mark more values by selecting their text, add payloads, preview the request count, then run and inspect a selected result.
+
+HTTPS path scopes and exclusions require proxy decryption to enforce them. The user confirmed the HTTPS MITM functional test with PASS. The one-time Windows CA trust lets Chrome accept PowerWEB certificates across the scope without individual page exceptions; it can be removed with **Remove CA trust**. See [PROXY.md](PROXY.md).
+
+### 8. Intruder
+
+Repeated, deliberately modified requests with your own payloads. Transfer a captured request from Proxy or Repeater, then mark positions in
 the URL, headers and body with a pair of section signs, choose an attack mode
 (Sniper / Battering ram / Pitchfork / Cluster bomb) and provide payload sets. See
 [INTRUDER.md](INTRUDER.md).
 
-### 10. Proxy
+### 9. Proxy
 
-A local intercepting forward proxy. Route your browser through it, modify request
-headers via rules or manual intercept, then forward or drop. HTTPS (CONNECT) is
-tunnelled, not decrypted in this version. See [PROXY.md](PROXY.md).
+A local intercepting forward proxy with a dedicated browser launcher and an
+optional target scope. With a scope set, only in-scope traffic is forwarded and
+out-of-origin CONNECTs are blocked; with the scope left empty the proxy forwards
+every request, so nothing has to be accepted per host. Route your browser through
+it and modify request and response headers/body via rules or manual intercept,
+then forward or drop. HTTPS
+is tunnelled only for a full-origin scope without exclusions (or when no scope is set); "Decrypt HTTPS (MITM)" uses a local CA
+that you trust once for the current Windows user in the Proxy tab. This trust affects other apps in that user account until removed. See [PROXY.md](PROXY.md).
 
-### 11. Data table
+### 10. Data table
 
 Send a request repeatedly with values from a pasted table; the template references
-columns as `$name`. See [DATATABLE.md](DATATABLE.md).
+columns as `$name`. An optional grep match/extract adds a result column. See
+[DATATABLE.md](DATATABLE.md).
+
+### 11. Repeater
+
+Keep several named request slots side by side, each with its own last response;
+edit and resend independently. Related: full resend from history and a response
+line-diff on tab 3. See [REPEATER.md](REPEATER.md).
+
+### 12. Sitemap
+
+A host-to-path tree of every URL PowerWEB has observed — crawler, native engine,
+manual requests, repeater and, while it runs, the proxy history. Select a node and
+send it to **Requests**, a new **Repeater** slot or **Intruder**. **Import HAR ...**
+loads a browser `.har` capture as history entries plus ready-to-edit repeater
+slots. Any request in tabs 3, 10, 12 and the sitemap can be copied out as a
+single-line `curl` command, and a `curl` command on the clipboard imported back
+into the request editor or a new repeater slot. See [SITEMAP.md](SITEMAP.md).
+
+### 13. TLS / SSL
+
+A native TLS/SSL scanner in pure PowerShell/.NET: it builds raw ClientHello
+records and reads the server's ServerHello directly over a `TcpClient`, so it
+needs no OpenSSL or other external tool. It enumerates the offered protocol
+versions (SSLv2, SSLv3, TLS 1.0/1.1/1.2/1.3) and, by elimination, the cipher
+suites each version accepts, classifies them (AEAD/CBC, forward secrecy,
+RC4/3DES/DES/EXPORT/NULL/anonymous/MD5), parses the certificate chain with X509
+(key size, signature algorithm, validity, self-signed/trust, hostname match)
+and derives a compact rating. Weaknesses such as POODLE, SWEET32, FREAK/LOGJAM,
+RC4, BEAST and DROWN are derived from the observed protocols and ciphers.
+
+Active probes (Heartbleed, CCS injection and TLS_FALLBACK_SCSV enforcement) send
+crafted TLS records and therefore run only when **Active vulnerability probes
+authorized** is ticked; the checkbox resets after each run. Heartbleed counts and
+immediately discards any over-read bytes — leaked memory is never stored. The CCS
+and fallback checks are best-effort and flagged experimental; confirm them
+manually. Findings are added to tab 2 and the full result (protocols, ciphers,
+certificate, vulnerabilities) is written to the exported report. The scan
+reflects what this host negotiates; it is not proof of exploitability beyond the
+observed handshake. See [TLS.md](TLS.md).
 
 ## Save and reports
 
@@ -154,12 +214,13 @@ columns as `$name`. See [DATATABLE.md](DATATABLE.md).
 ## Limits
 
 The native engine examines query parameters and selected headers. The Intruder
-(tab 9) and Data table (tab 11) send tester-defined, modified requests but do not
-rate the responses automatically. The proxy (tab 10) intercepts HTTP and modifies
-headers; HTTPS is only tunnelled there so far, not decrypted. The browser offers
-DOM crawling and a limited XSS check. Automatic business-logic tests, automatic
-login/MFA handling, extensive click sequences, OpenAPI import and a TLS-version
-scan are not included. A complete pentest requires manual checks.
+(tab 8) and Data table (tab 10) send tester-defined, modified requests but do not
+rate the responses automatically. The proxy (tab 9) intercepts requests and
+responses and modifies headers/body; with MITM on it also decrypts HTTPS. The TLS
+engine (tab 13) enumerates protocols and cipher suites and inspects the
+certificate, but automatic business-logic tests, automatic login/MFA handling,
+extensive click sequences and OpenAPI import are not included. A complete pentest
+requires manual checks.
 
 HTTP responses are never followed automatically. In the crawler, matching redirect
 targets enter the queue as their own URLs and count against the page and depth
@@ -176,7 +237,8 @@ the agreed test scope. Even GET calls can have side effects on faulty applicatio
 
 ## Sources and license
 
-The original PowerWEB code is under MIT, see LICENSE. Windows, PowerShell and .NET
+PowerWEB is part of the NoAuthZone tools (https://github.com/NoAuthZone). The
+original PowerWEB code is under MIT, see LICENSE. Windows, PowerShell and .NET
 are system requirements with their own license terms.
 
 ## Tests and command line
@@ -201,5 +263,19 @@ Save-PWProject -Project $p -Path "$PWD\project.json"
 ```
 
 The former `PowerWEB.Core.psm1` remains for the simple CLI commands from version 1.
-The interface uses `PowerWEB.Audit.psm1`, `PowerWEB.Scanner.psm1` and
-`PowerWEB.Proxy.psm1`.
+The interface uses `PowerWEB.Audit.psm1`, `PowerWEB.Scanner.psm1`,
+`PowerWEB.Proxy.psm1`, `PowerWEB.Tls.psm1` (TLS/SSL scan) and `PowerWEB.Tools.psm1`
+(sitemap, HAR import, cURL). The sitemap, HAR and cURL helpers are covered by
+`tests/Test-Tools.ps1`; the TLS engine by `tests/Test-Tls.ps1`, which starts a
+local `SslStream` test server and needs no network.
+
+A TLS scan without the interface:
+
+```powershell
+Import-Module .\PowerWEB.Tls.psm1
+$t = Invoke-PWTlsScan -Target 'example.org:443' -EnumerateCiphers
+$t.Protocols | Format-Table Name, Supported
+$t.Certificate | Format-List Subject, KeySize, SignatureAlgorithm, DaysLeft
+$t.Summary.Rating
+# add -AllowActiveVulnChecks for Heartbleed / CCS / TLS_FALLBACK_SCSV probes
+```

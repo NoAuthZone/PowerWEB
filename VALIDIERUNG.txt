@@ -1,0 +1,25 @@
+PowerWEB 4.0 - lokale Validierung
+
+Hinweis: Der fruehere Reiter "Browser" (JavaScript-Rendering per Node.js) wurde
+entfernt. PowerWEB benoetigt kein Node.js mehr. Ein echter Browser wird nur noch
+ueber "Open browser through proxy" (Reiter 9 Proxy) gestartet.
+
+Bestanden:
+  Test-Proxy.ps1             - HTTP, Scope, CONNECT-Sperre, Regeln, Intercept, POST-Body
+  Test-ProxyIntercept.ps1    - Intercept-Bedingungen: Scope, statische Dateien, Methoden, URL enthaelt/ausschliesst
+  Test-CaTrustStatus.ps1     - CurrentUser-Root-Status lesend; fremde CA abgelehnt
+  Test-Intruder.ps1          - Modi, Vorschau, Limits, Ergebnisanfragen
+  Test-Workflow.ps1          - WPF: Proxy -> Repeater/Intruder -> Anfrageeditor; Proxy-Browserstart-Parameter
+  Test-PowerWEB2.ps1         - HTTP, Scope, Projekt, Export und WPF
+  Test-NativeScanner.ps1     - eigene Engine, Belege und Sitzungen
+  Test-DataTable.ps1         - tabellengesteuerte Anfragen
+  Test-Tools.ps1             - Sitemap, HAR und cURL
+  Test-TlsRejection.ps1      - Ablehnung eines fremden Zertifikats
+  Test-LegacyCore.ps1        - alte CLI-Befehle
+  Test-ProxyMitm.ps1         - vom Nutzer in normaler Windows-Sitzung mit PASS bestaetigt
+
+Noch nicht endgetestet:
+  Einmaliges CA-Vertrauen    - Windows CurrentUser/Root add/remove und Chrome-Neustart
+  Interaktiver Browserstart  - "Open browser through proxy": Klick aus der WPF-Oberflaeche nicht endgetestet
+
+Details: PRUEFBERICHT.md, PROXY.md und INTRUDER.md.
